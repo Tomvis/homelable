@@ -56,6 +56,18 @@ def test_scan_config_write_is_destructive():
     assert annotation_for("update_scan_config").destructiveHint is True
 
 
+def test_destructive_and_open_world_sets_are_pinned_to_explicit_lists():
+    # spec §5.2: DESTRUCTIVE and OPEN_WORLD are curated allowlists, not derived
+    # from naming conventions (unlike READ_ONLY's list_/get_/read_/search_
+    # prefixes above) — pin the exact membership so a future edit to either
+    # set is a deliberate, reviewed change, not an accidental drift.
+    assert DESTRUCTIVE == {
+        "delete_device", "delete_node", "delete_edge", "delete_design", "delete_rack",
+        "unmount_device", "unpatch_cable", "set_device_faceplate", "update_scan_config",
+    }
+    assert OPEN_WORLD == {"trigger_scan", "rescan_device"}
+
+
 def test_unclassified_tool_is_rejected():
     with pytest.raises(KeyError, match="brand_new_tool"):
         annotation_for("brand_new_tool")
