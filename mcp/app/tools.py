@@ -3,6 +3,7 @@ from urllib.parse import quote
 from mcp.server import Server
 from mcp.types import Tool, TextContent
 from .backend_client import backend
+from .annotations import annotate
 from .devices import DEVICE_TOOL_NAMES, DEVICE_TOOLS, dispatch_device
 from .racks import RACK_TOOL_NAMES, RACK_TOOLS, dispatch_rack
 
@@ -318,7 +319,7 @@ def _build_tools() -> list[Tool]:
 
 # The rack canvas and the inventory write routes live in their own modules —
 # both are big enough to bury the logical-canvas tools this file is about.
-TOOLS = _build_tools() + RACK_TOOLS + DEVICE_TOOLS
+TOOLS = annotate(_build_tools() + RACK_TOOLS + DEVICE_TOOLS)
 
 
 def register_tools(server: Server):
