@@ -1,0 +1,66 @@
+/* Home theme (HW-48, Tomvis fork only). Homelable's chrome is dark-only, so these are the
+   DARK role tokens from homelab-stacks theme/dist/tokens.resolved.json. Hex literals in
+   components are remapped at build time by ../homeTheme.ts. Own file so rebases onto
+   upstream releases don't conflict; index.css only gains the @import. */
+@font-face {
+  font-family: 'Rubik';
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url('./assets/fonts/Rubik-VF.woff2') format('woff2');
+}
+
+:root:root { /* doubled: this file is @imported BEFORE index.css's own :root */
+  color-scheme: dark;
+  --background: #16222A;
+  --foreground: #EAF0F0;
+  --card: #283B45;
+  --card-foreground: #EAF0F0;
+  --popover: #1F2F38;
+  --popover-foreground: #EAF0F0;
+  --primary: #8DB0BD;
+  --primary-foreground: #16222A;
+  --secondary: #283B45;
+  --secondary-foreground: #EAF0F0;
+  --muted: #1F2F38;
+  --muted-foreground: #8BA4AE;
+  --accent: #283B45;
+  --accent-foreground: #8DB0BD;
+  --destructive: #FF8AA0;
+  --border: #3A525D;
+  --input: #283B45;
+  --ring: #8DB0BD;
+  --radius: 6px;
+
+  /* cyan = "on right now" only: online is the one live state */
+  --status-online: #14D9C4;
+  --status-offline: #FF8AA0;
+  --status-pending: #F5B14C;
+  --status-unknown: #8BA4AE;
+
+  --accent-cyan: #8DB0BD;
+  --accent-green: #36E0A0;
+
+  --surface-base: #16222A;
+  --surface-elevated: #1F2F38;
+  --surface-card: #283B45;
+}
+
+/* Rubik only; data labels (.font-mono) too, with tabular figures. Real code keeps a mono. */
+html body,
+html .font-sans,
+html .font-mono {
+  font-family: 'Rubik', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+body {
+  font-variant-numeric: tabular-nums;
+}
+html code,
+html pre,
+html kbd,
+html samp,
+html pre .font-mono,
+html code.font-mono,
+html pre.font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
