@@ -3,20 +3,20 @@ import { render, screen } from '@testing-library/react'
 import { Logo } from '../Logo'
 
 describe('Logo', () => {
-  it('renders the official mark (house + network nodes), not a placeholder icon', () => {
+  it('renders the home mark (house + window), not a placeholder icon', () => {
     render(<Logo />)
     const svg = screen.getByTestId('logo-mark')
-    // Canonical house outline from docs/logo/icon.svg
-    expect(svg.querySelector('path')?.getAttribute('d'))
-      .toBe('M32 11 L53 30 L48 30 L48 53 L16 53 L16 30 L11 30 Z')
-    // Center hub + 3 peripheral nodes + hub glow + 2 background circles
-    expect(svg.querySelectorAll('circle').length).toBe(7)
+    // Canonical house outline from homelab-stacks theme/dist/logo/home-mark.svg
+    expect(svg.querySelector('polygon')?.getAttribute('points'))
+      .toBe('256,40 16,272 96,272 96,464 416,464 416,272 496,272')
+    // Chimney + 4 window panes
+    expect(svg.querySelectorAll('rect').length).toBe(5)
   })
 
-  it('uses the canonical wordmark colors (Home #e6edf3 / lable #00d4ff)', () => {
+  it('uses the home wordmark colors (Home #EAF0F0 / lable #8DB0BD)', () => {
     render(<Logo showText />)
-    expect(screen.getByText('Home')).toHaveStyle({ color: '#e6edf3' })
-    expect(screen.getByText('lable')).toHaveStyle({ color: '#00d4ff' })
+    expect(screen.getByText('Home')).toHaveStyle({ color: '#EAF0F0' })
+    expect(screen.getByText('lable')).toHaveStyle({ color: '#8DB0BD' })
   })
 
   it('hides the wordmark when showText is false', () => {
@@ -32,19 +32,11 @@ describe('Logo', () => {
     expect(svg.getAttribute('height')).toBe('64')
   })
 
-  it('generates unique gradient/filter ids per instance — two logos can coexist', () => {
-    // Sidebar and Toolbar both render a Logo at the same time; duplicate SVG
-    // defs ids would make one instance reference the other's gradient.
+  it('two logos can coexist (no shared defs ids)', () => {
     render(<><Logo /><Logo /></>)
-    const [first, second] = screen.getAllByTestId('logo-mark')
-    const idOf = (svg: HTMLElement) => svg.querySelector('radialGradient')!.getAttribute('id')
-    expect(idOf(first)).not.toBe(idOf(second))
-
-    // Each instance must point at its own gradient
-    const gradientRef = (svg: HTMLElement) =>
-      svg.querySelectorAll('circle')[1].getAttribute('fill')
-    expect(gradientRef(first)).toBe(`url(#${idOf(first)!})`)
-    expect(gradientRef(second)).toBe(`url(#${idOf(second)!})`)
+    const marks = screen.getAllByTestId('logo-mark')
+    expect(marks).toHaveLength(2)
+    for (const svg of marks) expect(svg.querySelector('[id]')).toBeNull()
   })
 
   it('marks the svg aria-hidden — the adjacent wordmark carries the name', () => {
