@@ -15,6 +15,7 @@ export const HOME_HEX: Record<string, string> = {
   'e6edf3': 'eaf0f0', // text           -> text
   '8b949e': '8ba4ae', // muted text     -> text-disabled
   '00d4ff': '8db0bd', // primary cyan   -> primary (cyan is "on right now" only)
+  '22d3ee': '8db0bd', // second cyan (fibre edges, node accents) -> primary
   '39d353': '14d9c4', // online green   -> lit (the one live state)
   'f85149': 'ff8aa0', // offline/danger -> alarm
   'e3b341': 'f5b14c', // pending        -> warning
