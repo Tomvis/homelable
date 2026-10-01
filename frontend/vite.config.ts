@@ -3,6 +3,7 @@ import path from 'path'
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { homeTheme } from './homeTheme'
 
 const appVersion = fs.readFileSync(path.resolve(__dirname, '../VERSION'), 'utf-8').trim()
 
@@ -19,7 +20,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), homeTheme()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

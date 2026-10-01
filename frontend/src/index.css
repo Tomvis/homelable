@@ -4,6 +4,7 @@
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/roboto";
 @import "@fontsource/jetbrains-mono";
+@import "./home-theme.css";
 
 @custom-variant dark (&:is(.dark *));
 

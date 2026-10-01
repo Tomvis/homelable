@@ -38,9 +38,9 @@ describe('LoginPage', () => {
   it('renders the official Homelable logo mark — not a generic lucide icon', () => {
     render(<LoginPage />)
     const svg = screen.getByTestId('logo-mark')
-    // The official mark from docs/logo/icon.svg, not lucide's Network glyph
-    expect(svg.querySelector('path')?.getAttribute('d'))
-      .toBe('M32 11 L53 30 L48 30 L48 53 L16 53 L16 30 L11 30 Z')
+    // The home mark (HW-48 fork theme), not lucide's Network glyph
+    expect(svg.querySelector('polygon')?.getAttribute('points'))
+      .toBe('256,40 16,272 96,272 96,464 416,464 416,272 496,272')
     expect(svg.classList.contains('lucide')).toBe(false)
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Homelable')
     expect(screen.getByText('HomeLab Visualizer')).toBeDefined()
