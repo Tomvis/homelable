@@ -13,6 +13,7 @@ describe('home theme remap (HW-48)', () => {
   })
   it('maps online green to lit cyan and rgb tuples', () => {
     expect(remapHome('#39d353')).toBe('#14d9c4')
+    expect(remapHome("fibre:'#22D3EE',x:'#22d3ee40'")).toBe("fibre:'#8db0bd',x:'#8db0bd40'")
     expect(remapHome('rgba(0, 212, 255, 0.3) rgb(13,17,23)')).toBe('rgba(141, 176, 189, 0.3) rgb(22, 34, 42)')
   })
   it('renames inline font stacks only when asked', () => {
