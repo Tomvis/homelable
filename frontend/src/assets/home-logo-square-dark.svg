@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -68 707 707" width="707" height="707">
   <title>Home</title>
-  <style>.halo{fill:#FFFFFF;opacity:.75}.cloud{fill:url(#cloud-fill)}.puff{fill:url(#puff-fill)}.house{fill:url(#house-fill)}.cut{fill:#FFFFFF}.line{fill:none;stroke:#FFFFFF}.chimney{fill:url(#house-fill)}.flue{fill:url(#flue-fill)}</style>
+  <style>.halo,.puff{display:none}.cloud{fill:#EAF0F0;opacity:.12;filter:none}.house{fill:url(#house-fill)}.cut{fill:#FFFFFF}.line{fill:none;stroke:#FFFFFF}.chimney{fill:url(#house-fill)}.flue{fill:url(#flue-fill)}</style>
   <defs>
     <linearGradient id="cloud-fill" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#FFFFFF"/><stop offset=".45" stop-color="#F4F8F9"/>

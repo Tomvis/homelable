@@ -3,14 +3,11 @@ import { render, screen } from '@testing-library/react'
 import { Logo } from '../Logo'
 
 describe('Logo', () => {
-  it('renders the home mark (house + window), not a placeholder icon', () => {
+  it("renders Tom's full home logo (dark-UI variant), not the house-only mark", () => {
     render(<Logo />)
-    const svg = screen.getByTestId('logo-mark')
-    // Canonical house outline from homelab-stacks theme/dist/logo/home-mark.svg
-    expect(svg.querySelector('polygon')?.getAttribute('points'))
-      .toBe('256,40 16,272 96,272 96,464 416,464 416,272 496,272')
-    // Chimney + 4 window panes
-    expect(svg.querySelectorAll('rect').length).toBe(5)
+    const img = screen.getByTestId('logo-mark')
+    expect(img.tagName).toBe('IMG')
+    expect(img.getAttribute('src')).toContain('home-logo-square-dark')
   })
 
   it('uses the home wordmark colors (Home #EAF0F0 / lable #8DB0BD)', () => {
@@ -25,21 +22,14 @@ describe('Logo', () => {
     expect(screen.getByTestId('logo-mark')).toBeInTheDocument()
   })
 
-  it('scales the svg to the requested size', () => {
+  it('scales the logo to the requested size', () => {
     render(<Logo size={64} />)
     const svg = screen.getByTestId('logo-mark')
     expect(svg.getAttribute('width')).toBe('64')
     expect(svg.getAttribute('height')).toBe('64')
   })
 
-  it('two logos can coexist (no shared defs ids)', () => {
-    render(<><Logo /><Logo /></>)
-    const marks = screen.getAllByTestId('logo-mark')
-    expect(marks).toHaveLength(2)
-    for (const svg of marks) expect(svg.querySelector('[id]')).toBeNull()
-  })
-
-  it('marks the svg aria-hidden — the adjacent wordmark carries the name', () => {
+  it('marks the logo aria-hidden — the adjacent wordmark carries the name', () => {
     render(<Logo />)
     expect(screen.getByTestId('logo-mark')).toHaveAttribute('aria-hidden', 'true')
   })
