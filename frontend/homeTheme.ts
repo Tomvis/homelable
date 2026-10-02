@@ -37,13 +37,26 @@ export function remapHome(code: string, fonts = false): string {
   return out
 }
 
+// Upstream's official logo keeps its own colours (HW-58): its hexes are parked as tokens before
+// the remap and restored after it.
+const KEEP_MODULE_RE = /\/src\/components\/ui\/Logo\.tsx$/
+const KEEP_HEX_RE = /#([0-9a-f]{6})(?![0-9a-f])/gi
+const KEPT_RE = /__homeKeep_([0-9a-f]{6})/gi
+
+/** Park hexes in `code` so remapHome() leaves them alone; `restoreKept` undoes it. */
+export const keepHexes = (code: string) => code.replace(KEEP_HEX_RE, '__homeKeep_$1')
+export const restoreKept = (code: string) => code.replace(KEPT_RE, '#$1')
+
 export function homeTheme(): Plugin {
   return {
     name: 'home-theme',
     apply: 'build',
     enforce: 'post',
+    transform(code, id) {
+      return KEEP_MODULE_RE.test(id.split('?')[0]) ? { code: keepHexes(code), map: null } : null
+    },
     renderChunk(code) {
-      return { code: remapHome(code, true), map: null }
+      return { code: restoreKept(remapHome(code, true)), map: null }
     },
     generateBundle(_opts, bundle) {
       for (const file of Object.values(bundle)) {
