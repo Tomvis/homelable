@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { remapHome } from '../../homeTheme'
+import { keepHexes, remapHome, restoreKept } from '../../homeTheme'
 
 describe('home theme remap (HW-48)', () => {
   it('rewrites class strings and their escaped selectors identically', () => {
@@ -20,5 +20,9 @@ describe('home theme remap (HW-48)', () => {
     const js = `{fontFamily:'Inter, sans-serif'};x='"JetBrains Mono", monospace';y='Inter (sans-serif)'`
     expect(remapHome(js, true)).toBe(`{fontFamily:'Rubik, sans-serif'};x='"Rubik", monospace';y='Inter (sans-serif)'`)
     expect(remapHome(js)).toBe(js)
+  })
+  it('kept hexes (upstream logo) survive the remap', () => {
+    const js = `stroke:"#00d4ff",fill:"#39d353",x:\`url(#\${id})\``
+    expect(restoreKept(remapHome(keepHexes(js), true))).toBe(js)
   })
 })
