@@ -3,14 +3,6 @@
    (../homeTheme.ts) points upstream's hardcoded palette at them. The values below are only the
    first-paint fallback (slate, following the device). Own file so rebases onto upstream releases
    don't conflict; index.css only gains the @import. */
-@font-face {
-  font-family: 'Rubik';
-  font-style: normal;
-  font-weight: 300 900;
-  font-display: swap;
-  src: url('./assets/fonts/Rubik-VF.woff2') format('woff2');
-}
-
 :root {
   --hl-bg: #16222A;
   --hl-surface: #1F2F38;
@@ -92,25 +84,6 @@
   --surface-base: var(--hl-bg);
   --surface-elevated: var(--hl-surface);
   --surface-card: var(--hl-surface-2);
-}
-
-/* Rubik only; data labels (.font-mono) too, with tabular figures. Real code keeps a mono. */
-html body,
-html .font-sans,
-html .font-mono {
-  font-family: 'Rubik', system-ui, -apple-system, 'Segoe UI', sans-serif;
-}
-body {
-  font-variant-numeric: tabular-nums;
-}
-html code,
-html pre,
-html kbd,
-html samp,
-html pre .font-mono,
-html code.font-mono,
-html pre.font-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* React Flow's own dark/light defaults (colorMode) -> the home roles; the canvas wrapper paints
