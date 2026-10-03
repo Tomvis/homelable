@@ -1,7 +1,8 @@
-/* Home theme (HW-48, Tomvis fork only). Homelable's chrome is dark-only, so these are the
-   DARK role tokens from homelab-stacks theme/dist/tokens.resolved.json. Hex literals in
-   components are remapped at build time by ../homeTheme.ts. Own file so rebases onto
-   upstream releases don't conflict; index.css only gains the @import. */
+/* Home theme (HW-48, runtime since HW-64; Tomvis fork only). src/homeTheme/runtime.ts sets the
+   --hl-* role vars on <html> from the theme catalog for the user's theme x mode; the build
+   (../homeTheme.ts) points upstream's hardcoded palette at them. The values below are only the
+   first-paint fallback (slate, following the device). Own file so rebases onto upstream releases
+   don't conflict; index.css only gains the @import. */
 @font-face {
   font-family: 'Rubik';
   font-style: normal;
@@ -10,40 +11,87 @@
   src: url('./assets/fonts/Rubik-VF.woff2') format('woff2');
 }
 
+:root {
+  --hl-bg: #16222A;
+  --hl-surface: #1F2F38;
+  --hl-surface-2: #283B45;
+  --hl-text: #EAF0F0;
+  --hl-text-2: #BAD2DE;
+  --hl-text-disabled: #8BA4AE;
+  --hl-border: #3A525D;
+  --hl-border-strong: #6E8F9B;
+  --hl-brand: #587E8D;
+  --hl-primary: #8DB0BD;
+  --hl-on-primary: #16222A;
+  --hl-link: #BAD2DE;
+  --hl-lit: #14D9C4;
+  --hl-lit-fill: #14D9C4;
+  --hl-on-lit: #062420;
+  --hl-alarm: #FF8AA0;
+  --hl-warning: #F5B14C;
+  --hl-success: #36E0A0;
+  --hl-hero: #466A77;
+  --hl-on-hero: #FFFFFF;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --hl-bg: #EAF0F0;
+    --hl-surface: #FFFFFF;
+    --hl-surface-2: #DCE6E8;
+    --hl-text: #16222A;
+    --hl-text-2: #34505A;
+    --hl-text-disabled: #526D78;
+    --hl-border: #BAD2DE;
+    --hl-border-strong: #587E8D;
+    --hl-brand: #587E8D;
+    --hl-primary: #466A77;
+    --hl-on-primary: #FFFFFF;
+    --hl-link: #466A77;
+    --hl-lit: #0A6A60;
+    --hl-lit-fill: #14D9C4;
+    --hl-on-lit: #062420;
+    --hl-alarm: #B0233D;
+    --hl-warning: #8A5300;
+    --hl-success: #0F6E4E;
+    --hl-hero: #466A77;
+    --hl-on-hero: #FFFFFF;
+  }
+}
+
 :root:root { /* doubled: this file is @imported BEFORE index.css's own :root */
-  color-scheme: dark;
-  --background: #16222A;
-  --foreground: #EAF0F0;
-  --card: #283B45;
-  --card-foreground: #EAF0F0;
-  --popover: #1F2F38;
-  --popover-foreground: #EAF0F0;
-  --primary: #8DB0BD;
-  --primary-foreground: #16222A;
-  --secondary: #283B45;
-  --secondary-foreground: #EAF0F0;
-  --muted: #1F2F38;
-  --muted-foreground: #8BA4AE;
-  --accent: #283B45;
-  --accent-foreground: #8DB0BD;
-  --destructive: #FF8AA0;
-  --border: #3A525D;
-  --input: #283B45;
-  --ring: #8DB0BD;
+  color-scheme: light dark;
+  --background: var(--hl-bg);
+  --foreground: var(--hl-text);
+  --card: var(--hl-surface-2);
+  --card-foreground: var(--hl-text);
+  --popover: var(--hl-surface);
+  --popover-foreground: var(--hl-text);
+  --primary: var(--hl-primary);
+  --primary-foreground: var(--hl-on-primary);
+  --secondary: var(--hl-surface-2);
+  --secondary-foreground: var(--hl-text);
+  --muted: var(--hl-surface);
+  --muted-foreground: var(--hl-text-disabled);
+  --accent: var(--hl-surface-2);
+  --accent-foreground: var(--hl-primary);
+  --destructive: var(--hl-alarm);
+  --border: var(--hl-border);
+  --input: var(--hl-surface-2);
+  --ring: var(--hl-primary);
   --radius: 6px;
 
   /* cyan = "on right now" only: online is the one live state */
-  --status-online: #14D9C4;
-  --status-offline: #FF8AA0;
-  --status-pending: #F5B14C;
-  --status-unknown: #8BA4AE;
+  --status-online: var(--hl-lit);
+  --status-offline: var(--hl-alarm);
+  --status-pending: var(--hl-warning);
+  --status-unknown: var(--hl-text-disabled);
 
-  --accent-cyan: #8DB0BD;
-  --accent-green: #36E0A0;
+  --accent-cyan: var(--hl-primary);
+  --accent-green: var(--hl-success);
 
-  --surface-base: #16222A;
-  --surface-elevated: #1F2F38;
-  --surface-card: #283B45;
+  --surface-base: var(--hl-bg);
+  --surface-elevated: var(--hl-surface);
+  --surface-card: var(--hl-surface-2);
 }
 
 /* Rubik only; data labels (.font-mono) too, with tabular figures. Real code keeps a mono. */
@@ -63,4 +111,44 @@ html pre .font-mono,
 html code.font-mono,
 html pre.font-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* React Flow's own dark/light defaults (colorMode) -> the home roles; the canvas wrapper paints
+   the preset's background, so React Flow's must not cover it. */
+html .react-flow.react-flow { /* beats xyflow's later .react-flow.dark */
+  --xy-background-color-default: transparent;
+  --xy-attribution-background-color-default: color-mix(in srgb, var(--hl-surface) 60%, transparent);
+  --xy-minimap-background-color-default: var(--hl-surface);
+  --xy-minimap-mask-background-color-default: color-mix(in srgb, var(--hl-bg) 60%, transparent);
+  --xy-minimap-node-background-color-default: var(--hl-surface-2);
+  --xy-connectionline-stroke-default: var(--hl-primary);
+  --xy-selection-background-color-default: color-mix(in srgb, var(--hl-primary) 8%, transparent);
+  --xy-selection-border-default: 1px dotted color-mix(in srgb, var(--hl-primary) 80%, transparent);
+}
+.react-flow__attribution a { color: var(--hl-text-disabled); }
+
+/* Racks are hardware: drawn with the theme's DARK roles in both modes (runtime.ts sets --hl-dark-*),
+   so faceplate artwork, labels and LEDs keep their contrast on a light canvas. */
+.react-flow__node-rack {
+  color-scheme: dark;
+  --hl-bg: var(--hl-dark-bg);
+  --hl-surface: var(--hl-dark-surface);
+  --hl-surface-2: var(--hl-dark-surface-2);
+  --hl-text: var(--hl-dark-text);
+  --hl-text-2: var(--hl-dark-text-2);
+  --hl-text-disabled: var(--hl-dark-text-disabled);
+  --hl-border: var(--hl-dark-border);
+  --hl-border-strong: var(--hl-dark-border-strong);
+  --hl-brand: var(--hl-dark-brand);
+  --hl-primary: var(--hl-dark-primary);
+  --hl-on-primary: var(--hl-dark-on-primary);
+  --hl-link: var(--hl-dark-link);
+  --hl-lit: var(--hl-dark-lit);
+  --hl-lit-fill: var(--hl-dark-lit-fill);
+  --hl-on-lit: var(--hl-dark-on-lit);
+  --hl-alarm: var(--hl-dark-alarm);
+  --hl-warning: var(--hl-dark-warning);
+  --hl-success: var(--hl-dark-success);
+  --hl-hero: var(--hl-dark-hero);
+  --hl-on-hero: var(--hl-dark-on-hero);
 }
