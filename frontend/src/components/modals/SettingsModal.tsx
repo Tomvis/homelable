@@ -19,6 +19,7 @@ import { useCanvasStore } from '@/stores/canvasStore'
 import { useWalkthroughStore } from '@/stores/walkthroughStore'
 import { toast } from 'sonner'
 import { GitSyncSettings } from './GitSyncSettings'
+import { HomeThemeSettings } from '@/homeTheme/HomeThemeSettings'
 import {
   type AlignmentSettings,
   readAlignmentSettings,
@@ -397,6 +398,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
         <DialogHeader>
           <DialogTitle className="text-foreground">Settings</DialogTitle>
         </DialogHeader>
+        <HomeThemeSettings />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5 py-2">
           {/* Left column */}
