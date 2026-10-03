@@ -101,17 +101,15 @@ export function remapCss(css: string): string {
 const JS_HEX_RE = new RegExp(`(?<!\\[[^\\]\\s"'\`]*)(?<![\\\\&])#${HEX}`, 'g')
 const PROP_BEFORE_RE = /(?:^|[^\w-])(color|fill|stroke|background(?:Color)?|border(?:Color)?)\s*:\s*["'`]$/
 
-/** Remap colour literals in emitted JS; `fonts` also renames inline font stacks. */
-export function remapJs(code: string, fonts = false): string {
+/** Remap colour literals in emitted JS. Fonts stay upstream's (Inter / JetBrains Mono, HW-67). */
+export function remapJs(code: string): string {
   let out = code.replace(JS_HEX_RE, (h, hex: string, a: string | undefined, offset: number) => {
     const prop = PROP_BEFORE_RE.exec(code.slice(Math.max(0, offset - 24), offset))?.[1]
     return mapHex(hex, a, prop) ?? h
   })
   out = mapRgba(out)
-  if (fonts) out = out.replace(FONT_RE, '$1Rubik$1')
   return out
 }
-const FONT_RE = /(?<![\w-])(['"]?)(?:Inter Variable|Inter|JetBrains Mono)\1(?=\s*,)/g
 
 /** `${expr}44` in a template literal -> `${__hlA(expr,"44")}` (a no-op for real hex colours). */
 export function wrapAlphaSuffix(code: string): string {
@@ -162,7 +160,7 @@ export function homeTheme(): Plugin[] {
         const file = id.split('?')[0]
         if (LOGO_MODULE_RE.test(file)) return { code: remapLogo(code), map: null }
         if (!SRC_RE.test(file) || file.includes('/src/homeTheme/')) return null
-        let out = remapJs(wrapAlphaSuffix(code), true)
+        let out = remapJs(wrapAlphaSuffix(code))
         if (file.endsWith('/src/utils/colorUtils.ts')) out = patchColorUtils(out)
         return out === code ? null : { code: out, map: null }
       },

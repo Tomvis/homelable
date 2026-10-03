@@ -28,9 +28,8 @@ describe('home theme build remap (HW-48/HW-64)', () => {
       .toBe('x=["var(--hl-lit)","#a855f7","color-mix(in srgb,var(--hl-alarm) 13.3%,transparent)"]')
     expect(remapJs('"rgba(0, 212, 255, 0.3)"')).toBe('"color-mix(in srgb,var(--hl-primary) 30%,transparent)"')
   })
-  it('JS: inline font stacks only when asked', () => {
+  it('JS: font stacks stay upstream (HW-67)', () => {
     const js = `{fontFamily:'Inter, sans-serif'};x='"JetBrains Mono", monospace'`
-    expect(remapJs(js, true)).toBe(`{fontFamily:'Rubik, sans-serif'};x='"Rubik", monospace'`)
     expect(remapJs(js)).toBe(js)
   })
   it('alpha suffixes go through the runtime helper', () => {
