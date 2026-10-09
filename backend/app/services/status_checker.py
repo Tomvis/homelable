@@ -78,16 +78,32 @@ async def check_node(check_method: str, target: str | None, ip: str | None) -> d
 
 
 # Prometheus being down turns every promql device unknown at once: say so once per
-# outage, not once per device per cycle. A broken expression is reported once.
-_promql_outage = False
+# outage, not once per device per cycle. The outage ends only after a full minute
+# without a failure, so a cycle where some of the concurrent queries time out does
+# not alternate warnings and recoveries. A broken expression is reported once.
+_PROMQL_RECOVERY_SECONDS = 60
+_promql_outage_since: float | None = None
+_promql_last_failure = 0.0
 _promql_bad: set[str] = set()
+# One client per event loop, reused by every check (the scheduler queries all
+# promql devices at once each cycle; a client per query rebuilt the SSL context).
+_promql_client: tuple[Any, httpx.AsyncClient] | None = None
+
+
+def _promql_http() -> httpx.AsyncClient:
+    global _promql_client
+    loop = asyncio.get_running_loop()
+    if _promql_client is None or _promql_client[0] is not loop or _promql_client[1].is_closed:
+        _promql_client = (loop, httpx.AsyncClient(timeout=5))
+    return _promql_client[1]
 
 
 def _promql_unreachable(url: str, reason: object) -> str:
-    global _promql_outage
-    if not _promql_outage:
+    global _promql_outage_since, _promql_last_failure
+    _promql_last_failure = time.monotonic()
+    if _promql_outage_since is None:
         logger.warning("Prometheus unreachable at %s (%s): promql devices read unknown", url, reason)
-        _promql_outage = True
+        _promql_outage_since = _promql_last_failure
     return "unknown"
 
 
@@ -97,20 +113,20 @@ async def _promql(expr: str | None) -> str:
     NaN samples are ignored. Errors never read as offline: a dead Prometheus must
     not paint the whole estate red.
     """
-    global _promql_outage
+    global _promql_outage_since
     if not (settings.promql_status_url and expr):
         return "unknown"
     url = f"{settings.promql_status_url.rstrip('/')}/api/v1/query"
     try:
-        async with httpx.AsyncClient(timeout=5) as client:
-            resp = await client.get(url, params={"query": expr})
+        resp = await _promql_http().get(url, params={"query": expr})
     except httpx.HTTPError as exc:
         return _promql_unreachable(url, exc)
     if resp.status_code >= 500:
         return _promql_unreachable(url, f"HTTP {resp.status_code}")
-    if _promql_outage:
+    if (_promql_outage_since is not None
+            and time.monotonic() - _promql_last_failure >= _PROMQL_RECOVERY_SECONDS):
         logger.info("Prometheus reachable again at %s", url)
-        _promql_outage = False
+        _promql_outage_since = None
     try:
         resp.raise_for_status()
         data = resp.json()["data"]

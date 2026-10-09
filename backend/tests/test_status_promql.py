@@ -14,8 +14,10 @@ PROM = "http://prom:9090"
 @pytest.fixture(autouse=True)
 def _prom(monkeypatch):
     monkeypatch.setattr(settings, "promql_status_url", PROM)
-    status_checker._promql_outage = False
+    status_checker._promql_outage_since = None
+    status_checker._promql_last_failure = 0.0
     status_checker._promql_bad.clear()
+    status_checker._promql_client = None
 
 
 def _vector(*values):
@@ -25,6 +27,7 @@ def _vector(*values):
 
 def _serve(handler):
     real = httpx.AsyncClient
+    status_checker._promql_client = None    # the client is cached per loop; a new server needs a new one
     return patch("app.services.status_checker.httpx.AsyncClient",
                  side_effect=lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
 
@@ -99,13 +102,17 @@ async def test_promql_server_error_is_an_outage(caplog):
 
 
 @pytest.mark.asyncio
-async def test_promql_recovery_is_logged(caplog):
+async def test_promql_recovery_is_logged(caplog, monkeypatch):
+    clock = [1000.0]
+    monkeypatch.setattr(status_checker.time, "monotonic", lambda: clock[0])
+
     def down(request):
         raise httpx.ConnectError("refused", request=request)
 
     with caplog.at_level("INFO", logger="app.services.status_checker"):
         with _serve(down):
             await check_node("promql", "up", None)
+        clock[0] += 61
         with _serve(_reply(_vector("1"))):
             assert (await check_node("promql", "up", None))["status"] == "online"
     assert "Prometheus reachable again" in caplog.text
@@ -132,3 +139,43 @@ def test_promql_url_is_env_only(monkeypatch):
     monkeypatch.setenv("PROMQL_STATUS_URL", "http://p:9090")
     assert Settings().promql_status_url == "http://p:9090"
     assert Settings.model_fields["promql_status_url"].default == ""
+
+
+@pytest.mark.asyncio
+async def test_promql_reuses_one_client_per_event_loop():
+    real, made = httpx.AsyncClient, []
+
+    def factory(**kw):
+        made.append(kw)
+        return real(transport=httpx.MockTransport(_reply(_vector("1"))), **kw)
+
+    status_checker._promql_client = None
+    with patch("app.services.status_checker.httpx.AsyncClient", side_effect=factory):
+        for _ in range(5):
+            assert (await check_node("promql", "up", None))["status"] == "online"
+    assert len(made) == 1
+
+
+@pytest.mark.asyncio
+async def test_mixed_results_within_a_minute_log_one_warning_and_no_recovery(caplog, monkeypatch):
+    clock = [1000.0]
+    monkeypatch.setattr(status_checker.time, "monotonic", lambda: clock[0])
+    calls = []
+
+    def flaky(request):
+        calls.append(1)
+        if len(calls) % 2:
+            raise httpx.ReadTimeout("slow", request=request)
+        return httpx.Response(200, json=_vector("1"))
+
+    with caplog.at_level("INFO", logger="app.services.status_checker"):
+        with _serve(flaky):
+            for _ in range(6):                     # one cycle: fail, ok, fail, ok, ...
+                await check_node("promql", "up", None)
+                clock[0] += 1
+        assert caplog.text.count("Prometheus unreachable") == 1
+        assert "reachable again" not in caplog.text
+        clock[0] += 61                              # a full minute without a failure
+        with _serve(_reply(_vector("1"))):
+            await check_node("promql", "up", None)
+    assert caplog.text.count("Prometheus reachable again") == 1
