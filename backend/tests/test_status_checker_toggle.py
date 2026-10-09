@@ -13,9 +13,10 @@ from app.core.scheduler import (
 )
 
 
-def _configure(mock_settings, *, checker: bool, services: bool = False) -> None:
+def _configure(mock_settings, *, checker: bool, services: bool = False, promql: str = "") -> None:
     mock_settings.status_checker_enabled = checker
     mock_settings.status_checker_interval = 60
+    mock_settings.promql_status_url = promql
     mock_settings.service_check_enabled = services
     mock_settings.service_check_interval = 300
     mock_settings.proxmox_sync_enabled = False
@@ -125,3 +126,35 @@ def test_enabling_service_checks_is_refused_when_disabled():
         _configure(s, checker=False)
         set_service_checks_enabled(True)
     mock_sched.add_job.assert_not_called()
+
+
+def test_promql_url_registers_the_status_job_while_probing_is_off():
+    mock_sched = MagicMock()
+    with patch("app.core.scheduler.settings") as s, \
+         patch("app.core.scheduler.AsyncIOScheduler", return_value=mock_sched):
+        _configure(s, checker=False, services=True, promql="http://p:9090")
+        start_scheduler()
+    assert "status_checks" in _job_ids(mock_sched)
+    assert "service_checks" not in _job_ids(mock_sched)
+
+
+def test_promql_only_start_keeps_the_disabled_line_and_never_says_status_checks_every(caplog):
+    mock_sched = MagicMock()
+    with patch("app.core.scheduler.settings") as s, \
+         patch("app.core.scheduler.AsyncIOScheduler", return_value=mock_sched), \
+         caplog.at_level("INFO", logger="app.core.scheduler"):
+        _configure(s, checker=False, promql="http://p:9090")
+        start_scheduler()
+    # deploy check (home-inventory runbook): this line exactly once, "status checks every" never
+    assert caplog.text.count("status checks disabled (STATUS_CHECKER_ENABLED=false)") == 1
+    assert "status checks every" not in caplog.text
+    assert "promql status every 60s" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_run_status_checks_without_url_is_still_inert():
+    with patch("app.core.scheduler.settings") as s, \
+         patch("app.core.scheduler.AsyncSessionLocal") as sessions:
+        _configure(s, checker=False, promql="")
+        await _run_status_checks()
+    sessions.assert_not_called()

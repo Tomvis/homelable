@@ -120,19 +120,24 @@ async def _run_status_checks() -> None:
     being drawn anywhere — and deleting a node no longer silently stops
     monitoring the host. `hide` (or clearing the check method) is what ends the
     checks; the broadcast simply carries an empty `node_ids`.
+
+    With STATUS_CHECKER_ENABLED=false only promql devices are checked, and only
+    when PROMQL_STATUS_URL is set.
     """
-    if not settings.status_checker_enabled:
+    promql_only = not settings.status_checker_enabled
+    if promql_only and not settings.promql_status_url:
         return
     async with AsyncSessionLocal() as db:
-        devices = (
-            await db.execute(
-                select(InventoryDevice).where(
-                    InventoryDevice.check_method.is_not(None),
-                    InventoryDevice.check_method != "",
-                    InventoryDevice.status != "hidden",
-                )
-            )
-        ).scalars().all()
+        conditions = [
+            InventoryDevice.check_method.is_not(None),
+            InventoryDevice.check_method != "",
+            InventoryDevice.status != "hidden",
+        ]
+        if promql_only:
+            # STATUS_CHECKER_ENABLED=false forbids probes; a promql check only
+            # reads Prometheus (HA-19).
+            conditions.append(InventoryDevice.check_method == "promql")
+        devices = (await db.execute(select(InventoryDevice).where(*conditions))).scalars().all()
         node_map = await _nodes_by_device(db)
         # Extract scalars while the session is open to avoid DetachedInstanceError
         checkable = [
@@ -371,7 +376,7 @@ def start_scheduler() -> None:
         except Exception as exc:
             logger.warning("Failed to shut down previous scheduler instance: %s", exc)
     scheduler = AsyncIOScheduler()
-    if settings.status_checker_enabled:
+    if settings.status_checker_enabled or settings.promql_status_url:
         scheduler.add_job(
             _run_status_checks,
             "interval",
@@ -380,8 +385,8 @@ def start_scheduler() -> None:
             max_instances=1,
             coalesce=True,
         )
-        if settings.service_check_enabled:
-            _add_service_check_job()
+    if settings.status_checker_enabled and settings.service_check_enabled:
+        _add_service_check_job()
     if settings.proxmox_sync_enabled:
         _add_proxmox_sync_job()
     if settings.zigbee_sync_enabled:
@@ -393,6 +398,9 @@ def start_scheduler() -> None:
     scheduler.start()
     if settings.status_checker_enabled:
         logger.info("Scheduler started — status checks every %ds", settings.status_checker_interval)
+    elif settings.promql_status_url:
+        logger.info("Scheduler started — status checks disabled (STATUS_CHECKER_ENABLED=false), "
+                    "promql status every %ds", settings.status_checker_interval)
     else:
         logger.info("Scheduler started — status checks disabled (STATUS_CHECKER_ENABLED=false)")
 

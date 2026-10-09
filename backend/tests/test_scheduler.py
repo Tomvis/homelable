@@ -79,6 +79,24 @@ async def test_run_status_checks_skips_devices_without_check_method(mem_db):
 
 
 @pytest.mark.asyncio
+async def test_run_status_checks_promql_only_when_probing_is_off(mem_db, monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "status_checker_enabled", False)
+    monkeypatch.setattr(settings, "promql_status_url", "http://p:9090")
+    async with mem_db() as session:
+        session.add(_make_device(check_method="ping", ip="10.0.0.1"))
+        session.add(_make_device(check_method="promql", check_target="up"))
+        await session.commit()
+
+    with patch("app.core.scheduler.AsyncSessionLocal", mem_db), \
+         patch("app.core.scheduler.check_node", new_callable=AsyncMock,
+               return_value={"status": "online", "response_time_ms": None}) as mock_check, \
+         patch("app.api.routes.status.broadcast_status", new_callable=AsyncMock):
+        await _run_status_checks()
+    assert [c.args[0] for c in mock_check.call_args_list] == ["promql"]
+
+
+@pytest.mark.asyncio
 async def test_run_status_checks_updates_device_status(mem_db):
     """check_node result lands on the device row and is broadcast to its nodes."""
     async with mem_db() as session:
