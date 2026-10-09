@@ -75,7 +75,7 @@ function CPStepper({ label, side, value, onChange }: {
   )
 }
 
-const CHECK_METHODS: CheckMethod[] = ['none', 'ping', 'http', 'https', 'tcp', 'ssh', 'prometheus', 'health']
+const CHECK_METHODS: CheckMethod[] = ['none', 'ping', 'http', 'https', 'tcp', 'ssh', 'prometheus', 'health', 'promql']
 const CONTAINER_MODE_TYPES: NodeType[] = ['proxmox', 'vm', 'lxc', 'docker_host']
 const ZIGBEE_TYPES: NodeType[] = ['zigbee_coordinator', 'zigbee_router', 'zigbee_enddevice']
 const ZWAVE_TYPES: NodeType[] = ['zwave_coordinator', 'zwave_router', 'zwave_enddevice']
@@ -91,6 +91,7 @@ const CHECK_METHOD_LABELS: Record<CheckMethod, string> = {
   ssh: 'SSH',
   prometheus: 'Prometheus',
   health: 'Health',
+  promql: 'PromQL (Prometheus)',
 }
 
 const DEFAULT_DATA: Partial<NodeData> = {

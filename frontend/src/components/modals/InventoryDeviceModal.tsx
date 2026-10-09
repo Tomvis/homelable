@@ -95,7 +95,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   iot: '#e3b341',
 }
 
-const CHECK_METHODS: CheckMethod[] = ['ping', 'http', 'https', 'tcp', 'ssh', 'prometheus', 'health', 'none']
+const CHECK_METHODS: CheckMethod[] = ['ping', 'http', 'https', 'tcp', 'ssh', 'prometheus', 'health', 'promql', 'none']
 
 const CHECK_METHOD_LABELS: Record<CheckMethod, string> = {
   none: 'None',
@@ -106,6 +106,7 @@ const CHECK_METHOD_LABELS: Record<CheckMethod, string> = {
   ssh: 'SSH',
   prometheus: 'Prometheus',
   health: 'Health',
+  promql: 'PromQL (Prometheus)',
 }
 
 /** Live reachability — not the pending/approved/hidden lifecycle. */
