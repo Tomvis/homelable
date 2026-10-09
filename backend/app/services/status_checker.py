@@ -1,6 +1,7 @@
-"""Per-node status checks: ping, http, https, tcp, ssh, prometheus, health, none."""
+"""Per-node status checks: ping, http, https, tcp, ssh, prometheus, health, promql, none."""
 import asyncio
 import logging
+import math
 import re
 import socket
 import sys
@@ -8,6 +9,8 @@ import time
 from typing import Any
 
 import httpx
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +22,9 @@ async def check_node(check_method: str, target: str | None, ip: str | None) -> d
     """
     if check_method == "none":
         return {"status": "online", "response_time_ms": None}
+    if check_method == "promql":
+        # The target is a PromQL expression, not a host: nothing is probed.
+        return {"status": await _promql(target), "response_time_ms": None}
 
     # Use only the first IP when the field contains comma-separated addresses
     raw_ip = ip.split(",")[0].strip() if ip else None
@@ -69,6 +75,58 @@ async def check_node(check_method: str, target: str | None, ip: str | None) -> d
     except Exception as exc:
         logger.debug("Check failed for %s (%s): %s", host, check_method, exc)
         return {"status": "offline", "response_time_ms": None}
+
+
+# Prometheus being down turns every promql device unknown at once: say so once per
+# outage, not once per device per cycle. A broken expression is reported once.
+_promql_outage = False
+_promql_bad: set[str] = set()
+
+
+def _promql_unreachable(url: str, reason: object) -> str:
+    global _promql_outage
+    if not _promql_outage:
+        logger.warning("Prometheus unreachable at %s (%s): promql devices read unknown", url, reason)
+        _promql_outage = True
+    return "unknown"
+
+
+async def _promql(expr: str | None) -> str:
+    """online if any sample > 0, offline if every sample is 0, unknown otherwise.
+
+    NaN samples are ignored. Errors never read as offline: a dead Prometheus must
+    not paint the whole estate red.
+    """
+    global _promql_outage
+    if not (settings.promql_status_url and expr):
+        return "unknown"
+    url = f"{settings.promql_status_url.rstrip('/')}/api/v1/query"
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get(url, params={"query": expr})
+    except httpx.HTTPError as exc:
+        return _promql_unreachable(url, exc)
+    if resp.status_code >= 500:
+        return _promql_unreachable(url, f"HTTP {resp.status_code}")
+    if _promql_outage:
+        logger.info("Prometheus reachable again at %s", url)
+        _promql_outage = False
+    try:
+        resp.raise_for_status()
+        data = resp.json()["data"]
+        if data["resultType"] != "vector":
+            raise ValueError(f"result type {data['resultType']!r}, want vector")
+        values = [float(sample["value"][1]) for sample in data["result"]]
+    except (httpx.HTTPStatusError, ValueError, KeyError, TypeError, IndexError) as exc:
+        if expr not in _promql_bad:
+            logger.warning("promql status query %r failed: %s", expr, exc)
+            _promql_bad.add(expr)
+        return "unknown"
+    _promql_bad.discard(expr)
+    values = [v for v in values if not math.isnan(v)]
+    if not values:
+        return "unknown"
+    return "online" if any(v > 0 for v in values) else "offline"
 
 
 def _is_ipv6(host: str) -> bool:

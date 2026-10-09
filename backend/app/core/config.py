@@ -186,6 +186,11 @@ class Settings(BaseSettings):
     # deliberately not in load_overrides/save_overrides, so the UI cannot
     # switch it back on through scan_config.json.
     status_checker_enabled: bool = True
+    # Tomvis fork (HA-19): read live status from Prometheus instead of probing.
+    # A device with check_method "promql" carries a PromQL expression in
+    # check_target. Unset = such devices read "unknown". Env-only, like
+    # STATUS_CHECKER_ENABLED: not in load_overrides/save_overrides.
+    promql_status_url: str = ""
 
     # Per-service status checker (independent of node checks). Off by default.
     service_check_enabled: bool = False
