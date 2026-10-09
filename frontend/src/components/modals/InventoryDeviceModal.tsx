@@ -702,7 +702,7 @@ export function InventoryDeviceModal({ device, onClose, onApprove, onHide, onIgn
                       </Select>
                     </Field>
                     <Field label="Check target">
-                      <Input value={form.check_target} onChange={(e) => set('check_target', e.target.value)} placeholder="host:port or URL" className={`${INPUT} font-mono`} />
+                      <Input value={form.check_target} onChange={(e) => set('check_target', e.target.value)} placeholder={form.check_method === 'promql' ? 'PromQL, e.g. max(up{job="x"})' : 'host:port or URL'} className={`${INPUT} font-mono`} />
                     </Field>
                   </div>
                 </Section>

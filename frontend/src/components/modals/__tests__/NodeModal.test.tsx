@@ -613,6 +613,19 @@ describe('NodeModal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add' }))
     expect((onSubmit.mock.calls[0][0] as Partial<NodeData>).check_method).toBe('none')
   })
+  it.each(zigbeeTypes)('keeps a promql check on a %s node (HA-19: status from Prometheus)', (type) => {
+    const { onSubmit } = renderModal({ initial: { ...BASE, type, label: 'Zigbee Node', check_method: 'promql', check_target: 'up' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    const sent = onSubmit.mock.calls[0][0] as Partial<NodeData>
+    expect(sent.check_method).toBe('promql')
+    expect(sent.check_target).toBe('up')
+  })
+
+  it('hints a PromQL expression in Check Target when the method is promql', () => {
+    renderModal({ initial: { ...BASE, check_method: 'promql' } })
+    expect(screen.getByPlaceholderText('PromQL, e.g. max(up{job="x"})')).toBeDefined()
+  })
+
   // ── Furniture: Description, not Notes ─────────────────────────────────
 
   it('labels the free-text field Notes for a device node', () => {

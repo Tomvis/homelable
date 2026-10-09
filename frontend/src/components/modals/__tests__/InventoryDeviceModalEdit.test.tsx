@@ -192,3 +192,17 @@ describe('InventoryDeviceModal — edit mode', () => {
     expect(screen.getAllByText('other.local').length).toBeGreaterThan(0)
   })
 })
+
+describe('InventoryDeviceModal — promql check target (HA-19)', () => {
+  it('hints a PromQL expression when the method is promql', () => {
+    render(<InventoryDeviceModal {...noop} device={makeDevice({ check_method: 'promql', check_target: '' })} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    expect(screen.getByPlaceholderText('PromQL, e.g. max(up{job="x"})')).toBeInTheDocument()
+  })
+
+  it('keeps the host hint for other methods', () => {
+    render(<InventoryDeviceModal {...noop} device={makeDevice({ check_method: 'http' })} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    expect(screen.getByPlaceholderText('host:port or URL')).toBeInTheDocument()
+  })
+})

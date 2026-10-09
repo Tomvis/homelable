@@ -81,6 +81,7 @@ const ZIGBEE_TYPES: NodeType[] = ['zigbee_coordinator', 'zigbee_router', 'zigbee
 const ZWAVE_TYPES: NodeType[] = ['zwave_coordinator', 'zwave_router', 'zwave_enddevice']
 // Mesh radio devices aren't IP-reachable, so they default to no status check.
 const MESH_TYPES: NodeType[] = [...ZIGBEE_TYPES, ...ZWAVE_TYPES]
+const PROMQL_PLACEHOLDER = 'PromQL, e.g. max(up{job="x"})'
 
 const CHECK_METHOD_LABELS: Record<CheckMethod, string> = {
   none: 'None',
@@ -131,7 +132,8 @@ interface NodeModalProps {
 // initial value is enough - no need for a reset effect.
 export function NodeModal({ open, onClose, onSubmit, initial, title = 'Add Node', parentCandidates = [], currentNodeId, onEditTypeStyle }: NodeModalProps) {
   const merged = { ...DEFAULT_DATA, ...initial }
-  if (MESH_TYPES.includes((merged.type ?? '') as NodeType)) merged.check_method = 'none'
+  // A mesh node has no address to probe, but a promql check reads Prometheus, not the device (HA-19).
+  if (MESH_TYPES.includes((merged.type ?? '') as NodeType) && merged.check_method !== 'promql') merged.check_method = 'none'
   const [form, setForm] = useState<Partial<NodeData>>(merged)
   const [iconPickerOpen, setIconPickerOpen] = useState(false)
   const [labelError, setLabelError] = useState(false)
@@ -210,7 +212,7 @@ export function NodeModal({ open, onClose, onSubmit, initial, title = 'Add Node'
                 const t = v as NodeType
                 setForm((f) => {
                   const next: Partial<NodeData> = { ...f, type: t }
-                  if (MESH_TYPES.includes(t)) next.check_method = 'none' as CheckMethod
+                  if (MESH_TYPES.includes(t) && f.check_method !== 'promql') next.check_method = 'none' as CheckMethod
                   // Drop the parent only if it's no longer a valid target for the
                   // new type — keep container-mode parents (any node can nest).
                   const parent = parentCandidates.find((n) => n.id === f.parent_id)
@@ -356,7 +358,7 @@ export function NodeModal({ open, onClose, onSubmit, initial, title = 'Add Node'
                 <Input
                   value={form.check_target ?? ''}
                   onChange={(e) => set('check_target', e.target.value)}
-                  placeholder="http://..."
+                  placeholder={form.check_method === 'promql' ? PROMQL_PLACEHOLDER : 'http://...'}
                   className={`bg-[#21262d] border-[#30363d] font-mono text-sm h-8 ${modalStyles['modal-radius']}`}
                 />
               </div>
