@@ -35,8 +35,18 @@ from app.db.database import AsyncSessionLocal, init_db
 from app.services.scanner import reconcile_orphan_runs
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+class _HealthAccessFilter(logging.Filter):
+    """Drop uvicorn's access line for a successful health probe."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        args = record.args
+        if isinstance(args, tuple) and len(args) == 5:
+            path, status = args[2], args[4]
+            return not (path == "/api/v1/health" and status == 200)
+        return True
+
+
+def configure_logging() -> None:
     # Ensure app logs are visible: attach a handler to the root logger if none
     # exists (uvicorn only installs handlers on its own loggers, not the root).
     root_logger = logging.getLogger()
@@ -47,6 +57,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     root_logger.setLevel(logging.INFO)
     logging.getLogger("app").setLevel(logging.INFO)
     logging.getLogger("app.services.scanner").setLevel(logging.INFO)
+    # HW-152: per-request httpx lines, per-run apscheduler lines and health
+    # probes were ~100% of the log volume. WARNING+ still ships.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("apscheduler").setLevel(logging.WARNING)
+    access = logging.getLogger("uvicorn.access")
+    if not any(isinstance(f, _HealthAccessFilter) for f in access.filters):
+        access.addFilter(_HealthAccessFilter())
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    configure_logging()
     await init_db()
     settings.load_overrides()
     # A scan runs on a background thread in this process, so anything still
