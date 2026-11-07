@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { parseFrontmatter } from '../frontmatter'
 import { MEDIA_PATH } from '../media'
 import { textDir } from './direction'
+import { MermaidDiagram } from './MermaidDiagram'
 import { toggleTaskAtLine } from './tasks'
 import { WikiText } from './WikiText'
 import type { LinkableDevice, LinkableDoc } from '../wikilinks'
@@ -20,6 +21,18 @@ import type { LinkableDevice, LinkableDoc } from '../wikilinks'
  * the generator writes as provenance markers simply do not render, which is
  * what we want: they stay in the source and out of the page.
  */
+
+type HastNode = { type: string; tagName?: string; value?: string; properties?: Record<string, unknown>; children?: HastNode[] }
+
+const hastText = (n: HastNode): string => n.value ?? (n.children ?? []).map(hastText).join('')
+
+/** The source of a ```mermaid fence (HW-302), or null for any other block. */
+function mermaidSource(pre?: HastNode): string | null {
+  const code = pre?.children?.find((c) => c.type === 'element')
+  const cls = code?.tagName === 'code' ? code.properties?.className : undefined
+  if (!Array.isArray(cls) || !cls.includes('language-mermaid')) return null
+  return hastText(code!).replace(/\n$/, '')
+}
 
 export interface MarkdownProps {
   body: string
@@ -136,9 +149,11 @@ export function Markdown({
         ) : (
           <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]">{children}</code>
         ),
-      pre: ({ children, node }) => (
-        <pre className={highlighted(node, 'my-4 overflow-x-auto rounded-lg border border-border bg-muted/40 p-3')}>{children}</pre>
-      ),
+      pre: ({ children, node }) => {
+        const mermaid = mermaidSource(node)
+        if (mermaid !== null) return <MermaidDiagram source={mermaid} className={highlighted(node)} />
+        return <pre className={highlighted(node, 'my-4 overflow-x-auto rounded-lg border border-border bg-muted/40 p-3')}>{children}</pre>
+      },
       hr: () => <hr className="my-6 border-border" />,
       ul: ({ children, node }) => <ul dir={textDir(node)} className={highlighted(node, 'my-3 list-disc ps-5')}>{children}</ul>,
       ol: ({ children, node }) => <ol dir={textDir(node)} className={highlighted(node, 'my-3 list-decimal ps-5')}>{children}</ol>,
