@@ -26,11 +26,13 @@ const theme = vi.hoisted(() => {
 vi.mock('@/homeTheme/runtime', () => ({ getState: theme.getState, subscribe: theme.subscribe }))
 
 import { Markdown } from '../markdown/Markdown'
+import { clearDrawnCache } from '../markdown/mermaid'
 
 const FENCE = '```mermaid\nflowchart LR\n  a --> b\n```'
 
 beforeEach(() => {
   theme.reset()
+  clearDrawnCache()
   mermaid.initialize.mockReset()
   mermaid.render.mockReset()
   mermaid.render.mockImplementation(async (id: string) => ({ svg: `<svg id="${id}" data-testid="diagram"><g/></svg>` }))
@@ -96,6 +98,29 @@ describe('Markdown — mermaid diagrams', () => {
       background: '#16222a', primaryColor: '#222222', primaryTextColor: '#eeeeee',
       primaryBorderColor: '#444444', lineColor: '#cccccc', textColor: '#eeeeee',
     })
+  })
+
+  it('keeps the drawn svg when a parent re-render remounts the diagram', async () => {
+    // Markdown's components memo follows unstable parent props, so `pre` is a new component type
+    // on such a render and the diagram remounts. Live: ~6 redraws/s with Settings open (11-08).
+    const { rerender, container } = render(<Markdown body={FENCE} onOpenDoc={() => {}} />)
+    await screen.findByTestId('diagram')
+    rerender(<Markdown body={FENCE} onOpenDoc={() => {}} />)
+    expect(screen.getByTestId('diagram')).toBeInTheDocument()
+    expect(container.querySelector('code.language-mermaid')).toBeNull()
+    await act(async () => { await Promise.resolve() })
+    expect(mermaid.render).toHaveBeenCalledTimes(1)
+  })
+
+  it('reuses a theme it already drew instead of drawing it again', async () => {
+    render(<Markdown body={FENCE} />)
+    await screen.findByTestId('diagram')
+    act(() => theme.set('light', '#eaf0f0'))
+    await waitFor(() => expect(mermaid.render).toHaveBeenCalledTimes(2))
+    act(() => theme.set('dark', '#16222a'))
+    await act(async () => { await Promise.resolve() })
+    expect(mermaid.render).toHaveBeenCalledTimes(2)
+    expect(screen.getByTestId('diagram').id).toBe(mermaid.render.mock.calls[0][0])
   })
 
   it('redraws when the theme changes', async () => {

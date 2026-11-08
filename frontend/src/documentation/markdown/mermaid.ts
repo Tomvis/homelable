@@ -18,6 +18,24 @@ let seq = 0
 /** Render ids double as DOM ids and CSS selectors inside the svg: letters, digits, dashes. */
 export const nextRenderId = () => `hl-mermaid-${++seq}`
 
+// Drawn svgs by theme + source. A remount (a parent re-render can make `pre` a new component
+// type) reuses the svg instead of flashing the source while mermaid draws it again.
+const drawn = new Map<string, string>()
+const DRAWN_MAX = 64
+
+export const drawnKey = (theme: Pick<HomeThemeState, 'resolved' | 'roles'>, source: string) =>
+  `${theme.resolved}\n${JSON.stringify(theme.roles)}\n${source}`
+
+export const drawnSvg = (key: string) => drawn.get(key)
+
+export function rememberSvg(key: string, svg: string) {
+  drawn.delete(key)
+  drawn.set(key, svg)
+  if (drawn.size > DRAWN_MAX) drawn.delete(drawn.keys().next().value!)
+}
+
+export const clearDrawnCache = () => drawn.clear()
+
 const HEX = /^#[0-9a-f]{6}$/i
 
 /** Mermaid's colour maths needs real colours, so the theme's current hex values, not var(--hl-*). */

@@ -5,15 +5,19 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import { getState, subscribe } from '@/homeTheme/runtime'
 import { cn } from '@/lib/utils'
 
-import { loadMermaid, mermaidConfig, nextRenderId, shortError } from './mermaid'
+import { drawnKey, drawnSvg, loadMermaid, mermaidConfig, nextRenderId, rememberSvg, shortError } from './mermaid'
 
 const BOX = 'my-4 overflow-x-auto rounded-lg border border-border bg-muted/40 p-3'
 
 export function MermaidDiagram({ source, className }: { source: string; className?: string }) {
   const theme = useSyncExternalStore(subscribe, getState)
+  const key = drawnKey(theme, source)
   const [drawn, setDrawn] = useState<{ svg?: string; error?: string }>({})
+  // Already drawn for this theme (also after a remount): use it, mermaid stays idle.
+  const svg = drawnSvg(key) ?? drawn.svg
 
   useEffect(() => {
+    if (drawnSvg(key)) return
     let live = true
     const id = nextRenderId()
     loadMermaid()
@@ -21,19 +25,22 @@ export function MermaidDiagram({ source, className }: { source: string; classNam
         mermaid.initialize(mermaidConfig(theme))
         return mermaid.render(id, source)
       })
-      .then(({ svg }) => { if (live) setDrawn({ svg }) })
+      .then(({ svg: out }) => {
+        rememberSvg(key, out)
+        if (live) setDrawn({ svg: out })
+      })
       .catch((e: unknown) => { if (live) setDrawn({ error: shortError(e) }) })
     return () => { live = false }
-  }, [source, theme])
+  }, [key, source, theme])
 
-  if (drawn.svg) {
+  if (svg) {
     return (
       <div
         role="img"
         aria-label="Diagram"
         className={cn(BOX, 'flex justify-center [&_svg]:h-auto [&_svg]:max-w-full', className)}
         // mermaid's own output under securityLevel 'strict' (DOMPurify-sanitised, no html labels)
-        dangerouslySetInnerHTML={{ __html: drawn.svg }}
+        dangerouslySetInnerHTML={{ __html: svg }}
       />
     )
   }
