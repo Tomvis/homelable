@@ -153,3 +153,10 @@ def test_every_advertised_tool_dispatches():
 
 def test_tool_names_are_unique():
     assert len({tool.name for tool in DOC_TOOLS}) == len(DOC_TOOLS)
+
+
+def test_icon_is_described_as_one_emoji():
+    # HW-302: agents stored icon names ("palette"), which the tree drew as text over the title.
+    for name in ("create_document", "update_document"):
+        tool = next(t for t in DOC_TOOLS if t.name == name)
+        assert "emoji" in tool.inputSchema["properties"]["icon"]["description"]
