@@ -18,6 +18,9 @@ from mcp.types import Tool
 
 from .backend_client import backend, safe_id
 
+# The tree draws this as text, so it must be one emoji (HW-302: "palette" overlapped the title).
+ICON_DESC = "One emoji shown in the tree, e.g. \"🎨\". Never an icon name: it is drawn as text."
+
 # Kept in sync with DOCUMENT_KINDS (backend/app/services/doc_tree.py), which is
 # itself the DocKind union in frontend/src/documentation/types.ts.
 DOC_KINDS = ["device", "node", "design", "page", "folder"]
@@ -91,7 +94,7 @@ DOC_TOOLS = [
             "title": {"type": "string"},
             "kind": {"type": "string", "enum": DOC_KINDS, "default": "page"},
             "body": {"type": "string", "description": "Markdown, optionally opening with a `---` frontmatter block. Wins over template_id."},
-            "icon": {"type": "string"},
+            "icon": {"type": "string", "description": ICON_DESC},
             "parent_id": {"type": "string", "description": "Library folder this page or folder is filed under."},
             "device_id": {"type": "string", "description": "Inventory device this document describes (kind 'device')."},
             "node_id": {"type": "string", "description": "Canvas node this document describes (kind 'node')."},
@@ -106,7 +109,7 @@ DOC_TOOLS = [
             "id": {"type": "string"},
             "body": {"type": "string", "description": "The full replacement body — not a patch. Read the document first and send it back edited, or the rest of it is dropped."},
             "title": {"type": "string", "description": "Renames the document. A `title:` in the body's frontmatter does the same and is the way the UI does it."},
-            "icon": {"type": "string"},
+            "icon": {"type": "string", "description": ICON_DESC},
             "parent_id": {"type": "string", "description": "Refile a page or folder under another folder."},
             "sort_order": {"type": "integer"},
             "starred": {"type": "boolean"},
